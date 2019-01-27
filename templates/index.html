@@ -1,0 +1,60 @@
+{% from "_formhelpers.html" import render_field %}
+<!doctype html>
+<head>
+	<title>party wave | get your sesh on without the crowd</title>
+
+	<link href="/static/bootstrap.min.css" rel="stylesheet">
+	<script src="/static/bootstrap.min.js"></script>
+	<script src="/static/select2.min.js"></script>
+	<link href="/static/select2.min.css" rel="stylesheet">
+	<link href="/static/partywave.css" rel="stylesheet">
+</head>
+
+<div class='container-fluid'>
+	<div class='row d-flex justify-content-center'>
+		<div class='col mt-5 mb-5'>
+			<h1>🎉 Party Wave 🌊</h1>
+		</div>
+	</div>
+
+	<div class='row d-flex justify-content-center'>
+
+		<div class="col mt-10">
+			<form method="post">
+				{{ render_field(form.spot_id) }}
+				<input type="submit" value="Submit">
+			</form>
+		</div>
+
+	</div>
+
+	{% if spots %}
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+			<table class="table">
+				<thead>
+					<td>Name</td>
+					<td>Location</td>
+					<td>Height</td>
+					<td>Tide</td>
+					<td>Crowd</td>
+				</thead>
+				<tbody>
+					{% for spot in spots %}
+					<tr>
+						<td id='spot-name'>{{ spot.name }}</td>
+						<td id='spot-location'>{{ spot.location }}</td>
+						<td id='spot-temp'>{{ spot.height }}</td>
+						<td id='spot-swells'>{{ spot.tide }}</td>
+						<td id='spot-crowd'>{{ spot.crowd }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	{% endif %}
+</div>
+
+
+</div>
