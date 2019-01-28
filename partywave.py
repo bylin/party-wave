@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -120,6 +121,4 @@ def stream_to_frame_tensor(stream_url):
       .reshape([-1, height, width, 3])
     )
     return video
-
-
 
