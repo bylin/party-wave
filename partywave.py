@@ -8,12 +8,15 @@ import requests
 import json
 import ffmpeg
 from datetime import datetime
-import keras_yolo
 import cv2
+from tempfile import NamedTemporaryFile
 app = Flask(__name__)
 STREAMS = pd.read_csv('streams.tsv', sep = '\t')
-CHOICES = [(-1, '')] + [(index, row['name']) for index, row in STREAMS.iterrows()]
+SPOTS = [(index, row['name']) for index, row in STREAMS.iterrows()]
+AREAS = [(index, area) for index, area in enumerate(STREAMS.loc[:, 'area'].unique())]
 DEBUG = False
+if not DEBUG:
+  import keras_yolo
 
 # Preload yolo model and weights
 
@@ -23,32 +26,50 @@ obj_thresh, nms_thresh = 0.3, 0.45
 anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 
 # Build model and load weights
-yolov3 = keras_yolo.make_yolov3_model()
-weight_reader = keras_yolo.WeightReader('surfer_4500.weights')
-labels = ["surfer"]
-
 if not DEBUG:
+  yolov3 = keras_yolo.make_yolov3_model()
+  weight_reader = keras_yolo.WeightReader('surfer_4500.weights')
+  labels = ["surfer"]
   weight_reader.load_weights(yolov3)
   yolov3._make_predict_function()
 
 class SpotForm(Form):
-  spot_id = SelectField('Spot', choices = CHOICES)
+  spot_id = SelectField('Spot', choices = SPOTS)
+  area_id = SelectField('Area', choices = AREAS)
 
-@app.route("/", methods=['GET', 'POST'])
+
+@app.route("/", methods=['GET'])
 def index():
   form = SpotForm()
-  if request.method == 'POST':
-    spot_id = int(request.form['spot_id'])
-    if spot_id == -1: 
-      return render_template('index.html', form=form)
-    
-    spot = probe_spot(spot_id)
-    spots = [spot]
-    return render_template('index.html', form=form, spots=spots)
-  
   return render_template('index.html', form=form)
 
-def probe_spot(spot_id):
+@app.route("/spot", methods=['GET', 'POST'])
+def spot():
+  if request.method == 'GET':
+    return index()
+  form = SpotForm()
+  spot_id = int(request.form['spot_id'])
+  print('spot id: {}'.format(spot_id))
+  if spot_id == -1: 
+    return render_template('index.html', form=form)
+  spot = probe_spot(spot_id, draw_video = True)
+  return render_template('index.html', form=form, spot=spot)
+
+@app.route("/area", methods=['GET', 'POST'])
+def area():
+  if request.method == 'GET':
+    return index()
+  form = SpotForm()
+  area_id = int(request.form['area_id'])
+  spot_ids = np.where(STREAMS['area'] == AREAS[area_id][1])[0]
+  area = []
+  for spot_id in spot_ids:
+    spot = probe_spot(spot_id)
+    area.append(spot)
+  return render_template('index.html', form=form, area=area)
+
+
+def probe_spot(spot_id, draw_video = False):
   spot = {}
   spot['name'] = STREAMS.name[spot_id]
   spot['location'] = STREAMS.location[spot_id]
@@ -56,10 +77,18 @@ def probe_spot(spot_id):
   spot['height'], spot['tide'] = pull_weather(spot['report_url'])
   
   stream_url = STREAMS.stream_url[spot_id]
-  if not DEBUG:
-    spot['crowd'] = estimate_crowds(stream_url)
-  else:
-    spot['crowd'] = 'Debug'
+  try:
+    if not DEBUG:
+      spot['crowd'] = estimate_crowds(stream_url)
+    else:
+      spot['crowd'] = 'Debug'
+
+    if draw_video:
+      spot['video'] = yolo_full_fps(stream_url)
+  except Exception as e:
+    if str(e) == 'ffmpeg error (see stderr output for detail)':
+      spot['crowd'] = "N/A"
+      spot['video'] = "N/A"
 
   return spot
 
@@ -101,12 +130,13 @@ def estimate_crowds(stream_url):
     return '🎊 Party 🎉'
   return 'Sparse'
 
-def stream_to_frame_tensor(stream_url):
-    probe = ffmpeg.probe(stream_url)
-    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-    width = int(video_stream['width'])
-    height = int(video_stream['height'])
-    
+def stream_to_frame_tensor(stream_url, full_fps = False):
+  probe = ffmpeg.probe(stream_url)
+  video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+  width = int(video_stream['width'])
+  height = int(video_stream['height'])
+  
+  if not full_fps:
     out, err = (
       ffmpeg
       .input(stream_url, t=5)
@@ -114,12 +144,91 @@ def stream_to_frame_tensor(stream_url):
       .output('pipe:', format='rawvideo', pix_fmt='rgb24')
       .run(capture_stdout=True)
     )
-    video = (
-      np
-      .frombuffer(out, np.uint8)
-      .reshape([-1, height, width, 3])
+  else:
+    out, err = (
+      ffmpeg
+      .input(stream_url, t=3)
+      .output('pipe:', format='rawvideo', pix_fmt='rgb24')
+      .run(capture_stdout=True)
     )
-    return video
+  video = (
+    np
+    .frombuffer(out, np.uint8)
+    .reshape([-1, height, width, 3])
+  )
+  return video
+
+def estimate_crowds(stream_url):
+  frames = stream_to_frame_tensor(stream_url)
+  # count boxes for each captured frame
+  object_counts = []
+
+  for i, frame in enumerate(frames):
+    print('processing frame {}'.format(i))
+    new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
+    yolos = yolov3.predict(new_image)
+    boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
+    image_h, image_w, _ = frame.shape
+    keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+    keras_yolo.do_nms(boxes, nms_thresh)    
+
+    object_counts.append(sum([box.classes[0] > obj_thresh for box in boxes]))
+
+  nsurfers = np.max(object_counts)
+  if nsurfers > 20:
+    return 'Gnarly'
+  elif nsurfers > 10:
+    return '🎊 Party 🎉'
+  return 'Sparse'
 
 
+def yolo_full_fps(stream_url):
+  probe = ffmpeg.probe(stream_url)
+  video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+  width = int(video_stream['width'])
+  height = int(video_stream['height'])
+  process1 = (
+      ffmpeg
+      .input(stream_url, t=3)
+      .output('pipe:', format='rawvideo', pix_fmt='rgb24')
+      .run_async(pipe_stdout=True)
+  )
 
+  outfile = 'static/{:%H%M%S-%m%d%y}.mp4'.format(datetime.now())
+  process2 = (
+      ffmpeg
+      .input('pipe:', format='rawvideo', pix_fmt='rgb24', s='{}x{}'.format(width, height))
+      .output(outfile, pix_fmt='yuv420p')
+      .overwrite_output()
+      .run_async(pipe_stdin=True)
+  )
+  
+  while True:
+    in_bytes = process1.stdout.read(width * height * 3)
+    if not in_bytes:
+        break
+    frame = (
+        np
+        .frombuffer(in_bytes, np.uint8)
+        .reshape([height, width, 3])
+    )
+
+    new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
+    yolos = yolov3.predict(new_image)
+    boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
+    image_h, image_w, _ = frame.shape
+    keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+    keras_yolo.do_nms(boxes, nms_thresh)
+    keras_yolo.draw_boxes(frame, boxes, labels, obj_thresh)    
+
+    process2.stdin.write(
+        frame
+        .astype(np.uint8)
+        .tobytes()
+    )
+
+  process2.stdin.close()
+  process1.wait()
+  process2.wait()
+
+  return outfile

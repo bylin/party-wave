@@ -2,12 +2,18 @@
 <!doctype html>
 <head>
 	<title>party wave | get your sesh on without the crowd</title>
-
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 	<link href="/static/bootstrap.min.css" rel="stylesheet">
 	<script src="/static/bootstrap.min.js"></script>
 	<script src="/static/select2.min.js"></script>
 	<link href="/static/select2.min.css" rel="stylesheet">
 	<link href="/static/partywave.css" rel="stylesheet">
+	<script>
+	$(document).ready(function() {
+    $('.spot-select').select2();
+    $('.area-select').select2();
+	});
+	</script>
 </head>
 
 <div class='container-fluid'>
@@ -20,15 +26,40 @@
 	<div class='row d-flex justify-content-center'>
 
 		<div class="col mt-10">
-			<form method="post">
-				{{ render_field(form.spot_id) }}
-				<input type="submit" value="Submit">
-			</form>
+			<div class="col-12">
+				<form action="{{ url_for('spot') }}" method="post">
+					Enter a spot:
+					<select class="select-size-xs spot-select" name="spot_id">
+						<option></option>
+	          {% for choice in form.spot_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" value="Submit">
+				</form>
+		  </div>
+
+		  <br>
+
+		  <div class="col-12">
+				<form action="{{ url_for('area') }}" method="post">
+					Or, select an area:
+					<select class="select-size-xs area-select" name="area_id">
+						<option></option>
+	          {% for choice in form.area_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" action="{{ url_for('area') }}" value="Submit">
+				</form>
+		  </div>
 		</div>
 
 	</div>
 
-	{% if spots %}
+	<br>
+
+	{% if area %}
 	<div class='row d-flex justify-content-center'>	
 		<div class="col mt-10">
 			<table class="table">
@@ -40,12 +71,12 @@
 					<td>Crowd</td>
 				</thead>
 				<tbody>
-					{% for spot in spots %}
+					{% for spot in area %}
 					<tr>
 						<td id='spot-name'>{{ spot.name }}</td>
 						<td id='spot-location'>{{ spot.location }}</td>
-						<td id='spot-temp'>{{ spot.height }}</td>
-						<td id='spot-swells'>{{ spot.tide }}</td>
+						<td id='spot-height'>{{ spot.height }}</td>
+						<td id='spot-tide'>{{ spot.tide }}</td>
 						<td id='spot-crowd'>{{ spot.crowd }}</td>
 					</tr>
 					{% endfor %}
@@ -53,6 +84,46 @@
 			</table>
 		</div>
 	</div>
+	{% endif %}
+
+	{% if spot %}
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+			<table class="table">
+				<tbody>
+			    <tr>
+			      <th id='spot-name'>Spot</th>
+				    <td>{{ spot.name }}</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-location'>Location</th>
+				    <td>{{ spot.location }}</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-height'>Height</th>
+				    <td>{{ spot.height }}</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-tide'>Tide</th>
+				    <td>{{ spot.tide }}</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-crowd'>Crowd</th>
+				    <td>{{ spot.crowd }}</td>
+				  </tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<hr>
+
+	{% if spot.video != 'N/A' %}
+	<video width="480" height="320" video controls loop autoplay>
+  	<source src="{{ spot.video }}" type="video/mp4">
+		Your browser does not support the video tag.
+	</video>
+	{% endif %}
 	{% endif %}
 </div>
 
