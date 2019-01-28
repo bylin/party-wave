@@ -243,6 +243,65 @@ def make_yolov3_model():
     model = Model(input_image, [yolo_82, yolo_94, yolo_106])    
     return model
 
+def make_surfer_model():
+    input_image = Input(shape=(None, None, 3))
+
+    # Layer 0 - special layer because we can't set skip connection properly
+    x = _conv_block(input_image, [{'filter': 16, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 0}], skip = False)
+    
+    # Layer 1
+    x = MaxPooling2D(2, strides = 2)(x)
+    
+    # Layer 2
+    x = _conv_block(x, [{'filter': 32, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 2}], skip = False)
+    
+    # Layer 3
+    x = MaxPooling2D(2, strides = 2)(x)
+    
+    # Layer 4
+    x = _conv_block(x, [{'filter': 64, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 4}], skip = False)
+
+    # Layer 5
+    x = MaxPooling2D(2, strides = 2)(x)
+
+    # Layer 6
+    x = _conv_block(x, [{'filter': 128, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 6}], skip = False)
+
+    # Layer 7
+    x = MaxPooling2D(2, strides = 2)(x)
+    
+    # Layer 8
+    x = _conv_block(x, [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 8}], skip = False)
+
+    skip_8 = x
+    
+    # Layer 9
+    x = MaxPooling2D(2, strides = 2)(x)
+    
+    # Layer 10
+    x = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 10}], skip = False)
+    
+    # Layer 11
+    x = MaxPooling2D(2, strides = 1)(x)
+    
+    # Layer 12-16
+    x = _conv_block(x, [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 12},
+                    {'filter':  256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 13}], skip = False)
+    
+    yolo_16 = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 14},
+                   {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 15}], skip = False)
+
+    # Layer 18-20
+    x = _conv_block(x, [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 18}], skip = False)
+    x = UpSampling2D(2)(x)
+    x = concatenate([x, skip_8])
+    
+    # Layer 21-23
+    yolo_23 = _conv_block(x, [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 21},
+                               {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False,  'leaky': False,  'layer_idx': 22}], skip=False)
+
+    model = Model(input_image, [yolo_16, yolo_23])
+    return model
 
 def preprocess_input(image, net_h, net_w):
     new_h, new_w, _ = image.shape
