@@ -19,20 +19,23 @@ DEBUG = False
 if not DEBUG:
   import keras_yolo
 
-# Preload yolo model and weights
-
 # Yolo parameters
-net_h, net_w = 416, 416
+net_h, net_w = 608, 608
 obj_thresh, nms_thresh = 0.3, 0.45
-anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
+# anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
+anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
+labels = ["surfer"]
 
 # Build model and load weights
 if not DEBUG:
-  yolov3 = keras_yolo.make_yolov3_model()
-  weight_reader = keras_yolo.WeightReader('surfer_4500.weights')
-  labels = ["surfer"]
-  weight_reader.load_weights(yolov3)
-  yolov3._make_predict_function()
+  # yolov3 = keras_yolo.make_yolov3_model()
+  # weight_reader = keras_yolo.WeightReader('surfer_4500.weights')
+  # weight_reader.load_weights(yolov3)
+  # yolov3._make_predict_function()
+  surfer_cnn = keras_yolo.make_surfer_model()
+  weight_reader = keras_yolo.WeightReaderTiny('surfer-tiny_8000.weights')
+  weight_reader.load_weights(surfer_cnn)
+  surfer_cnn._make_predict_function()
 
 class SpotForm(Form):
   spot_id = SelectField('Spot', choices = SPOTS)
@@ -116,7 +119,7 @@ def estimate_crowds(stream_url):
   for i, frame in enumerate(frames):
     print('processing frame {}'.format(i))
     new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
-    yolos = yolov3.predict(new_image)
+    yolos = surfer_cnn.predict(new_image)
     boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
     image_h, image_w, _ = frame.shape
     keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
@@ -164,13 +167,11 @@ def estimate_crowds(stream_url):
   # count boxes for each captured frame
   object_counts = []
 
-<<<<<<< HEAD
-=======
   for i, frame in enumerate(frames):
     print('processing frame {}'.format(i))
     new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
-    yolos = yolov3.predict(new_image)
-    boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
+    yolos = surfer_cnn.predict(new_image)
+    boxes = keras_yolo.decode_netout(yolos[1][0], anchors[1], obj_thresh, nms_thresh, net_h, net_w)
     image_h, image_w, _ = frame.shape
     keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
     keras_yolo.do_nms(boxes, nms_thresh)    
@@ -217,8 +218,8 @@ def yolo_full_fps(stream_url):
     )
 
     new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
-    yolos = yolov3.predict(new_image)
-    boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
+    yolos = surfer_cnn.predict(new_image)
+    boxes = keras_yolo.decode_netout(yolos[1][0], anchors[1], obj_thresh, nms_thresh, net_h, net_w)
     image_h, image_w, _ = frame.shape
     keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
     keras_yolo.do_nms(boxes, nms_thresh)

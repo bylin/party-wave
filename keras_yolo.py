@@ -66,6 +66,65 @@ class WeightReader:
     def reset(self):
         self.offset = 0
 
+class WeightReaderTiny:
+    def __init__(self, weight_file):
+        with open(weight_file, 'rb') as w_f:
+            major,    = struct.unpack('i', w_f.read(4))
+            minor,    = struct.unpack('i', w_f.read(4))
+            revision, = struct.unpack('i', w_f.read(4))
+
+            if (major*10 + minor) >= 2 and major < 1000 and minor < 1000:
+                w_f.read(8)
+            else:
+                w_f.read(4)
+
+            transpose = (major > 1000) or (minor > 1000)
+            
+            binary = w_f.read()
+
+        self.offset = 0
+        self.all_weights = np.frombuffer(binary, dtype='float32')
+        
+    def read_bytes(self, size):
+        self.offset = self.offset + size
+        return self.all_weights[self.offset-size:self.offset]
+
+    def load_weights(self, model):
+        for i in range(23):
+            try:
+                conv_layer = model.get_layer('conv_' + str(i))
+                print("loading weights of convolution #" + str(i))
+
+                if i not in [15, 22]:
+                    norm_layer = model.get_layer('bnorm_' + str(i))
+
+                    size = np.prod(norm_layer.get_weights()[0].shape)
+
+                    beta  = self.read_bytes(size) # bias
+                    gamma = self.read_bytes(size) # scale
+                    mean  = self.read_bytes(size) # mean
+                    var   = self.read_bytes(size) # variance            
+
+                    weights = norm_layer.set_weights([gamma, beta, mean, var])  
+
+                if len(conv_layer.get_weights()) > 1:
+                    bias   = self.read_bytes(np.prod(conv_layer.get_weights()[1].shape))
+                    kernel = self.read_bytes(np.prod(conv_layer.get_weights()[0].shape))
+                    
+                    kernel = kernel.reshape(list(reversed(conv_layer.get_weights()[0].shape)))
+                    kernel = kernel.transpose([2,3,1,0])
+                    conv_layer.set_weights([kernel, bias])
+                else:
+                    kernel = self.read_bytes(np.prod(conv_layer.get_weights()[0].shape))
+                    kernel = kernel.reshape(list(reversed(conv_layer.get_weights()[0].shape)))
+                    kernel = kernel.transpose([2,3,1,0])
+                    conv_layer.set_weights([kernel])
+            except ValueError:
+                print("no convolution #" + str(i))     
+    
+    def reset(self):
+        self.offset = 0
+
 class BoundBox:
     def __init__(self, xmin, ymin, xmax, ymax, objness = None, classes = None):
         self.xmin = xmin
@@ -246,7 +305,7 @@ def make_yolov3_model():
 def make_surfer_model():
     input_image = Input(shape=(None, None, 3))
 
-    # Layer 0 - special layer because we can't set skip connection properly
+    # Layer 0
     x = _conv_block(input_image, [{'filter': 16, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 0}], skip = False)
     
     # Layer 1
@@ -282,25 +341,29 @@ def make_surfer_model():
     x = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 10}], skip = False)
     
     # Layer 11
-    x = MaxPooling2D(2, strides = 1)(x)
+    x = MaxPooling2D(2, strides = 1, padding = 'same')(x)
     
-    # Layer 12-16
-    x = _conv_block(x, [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 12},
-                    {'filter':  256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 13}], skip = False)
+    # Layer 12-15
+    x = _conv_block(x, [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 12}], skip = False)
+    x = _conv_block(x, [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 13}], skip = False)
+    yolo_16 = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 14}, 
+                              {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 15}], skip = False)
     
-    yolo_16 = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 14},
-                   {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 15}], skip = False)
-
-    # Layer 18-20
+    # Layer 18
     x = _conv_block(x, [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 18}], skip = False)
+
+    # Layer 19
     x = UpSampling2D(2)(x)
+    
+    # Layer 20
     x = concatenate([x, skip_8])
     
     # Layer 21-23
     yolo_23 = _conv_block(x, [{'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 21},
-                               {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False,  'leaky': False,  'layer_idx': 22}], skip=False)
-
+                              {'filter': 18, 'kernel': 1, 'stride': 1, 'bnorm': False,  'leaky': False,  'layer_idx': 22}], skip = False)
+    
     model = Model(input_image, [yolo_16, yolo_23])
+    
     return model
 
 def preprocess_input(image, net_h, net_w):
