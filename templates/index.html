@@ -14,6 +14,51 @@
     $('.area-select').select2();
 	});
 	</script>
+	{% if map %}
+	<script>
+	var icons, markers;
+	function initMap() {
+    var map = new google.maps.Map(document.getElementById("map_canvas"), {
+      center: {lat: {{ map.center_lat }}, lng: {{ map.center_lon }}},
+      mapTypeId: 'roadmap'
+    });
+    map.setTilt(45);
+    var sw_corner = new google.maps.LatLng({{ map.min_lat }},{{ map.min_lon }});
+    var ne_corner = new google.maps.LatLng({{ map.max_lat }},{{ map.max_lon }});
+    var bounds = new google.maps.LatLngBounds(sw_corner, ne_corner);
+    map.fitBounds(bounds);
+    markers = JSON.parse('{{ map.coords_list | tojson | safe }}');
+        
+    // Display multiple markers on a map
+    var infoWindow = new google.maps.InfoWindow(), marker, i;
+    
+    icons = {
+    	'Sparse': 'static/blue.png',
+    	'🎊 Party 🎉': 'static/yellow.png', 
+    	'Gnarly': 'static/red.png', 
+    	'N/A': 'static/grey.png'}
+    // Loop through our array of markers & place each one on the map  
+    for( i = 0; i < markers.length; i++ ) {
+        var position = new google.maps.LatLng(markers[i]['lat'], markers[i]['lon']);
+        var marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            icon: icons[markers[i]['crowd']] 
+        });
+        
+        // Allow each marker to have an info window    
+        google.maps.event.addListener(marker, 'click', (function(marker, i) {
+            return function() {
+                // infoWindow.setContent(markers[i]['crowd']);
+                infoWindow.setContent('<b>' + markers[i]['name'] + '</b><br>' + markers[i]['crowd']);
+                infoWindow.open(map, marker);
+            }
+        })(marker, i));
+    }
+	}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ key }}&callback=initMap"></script>
+	{% endif %}
 </head>
 
 <div class='container-fluid'>
@@ -82,6 +127,14 @@
 					{% endfor %}
 				</tbody>
 			</table>
+		</div>
+	</div>
+
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+		  <div id="map_wrapper">
+		    <div id="map_canvas" class="mapping"></div>
+			</div>
 		</div>
 	</div>
 	{% endif %}

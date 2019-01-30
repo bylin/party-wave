@@ -11,6 +11,10 @@ import ffmpeg
 from datetime import datetime
 import cv2
 from tempfile import NamedTemporaryFile
+import os
+gmaps_api_key = os.environ.get('GMAPS_API_KEY')
+if not gmaps_api_key:
+    raise RuntimeError("Google Maps API key not set")
 app = Flask(__name__)
 STREAMS = pd.read_csv('streams.tsv', sep = '\t')
 SPOTS = [(index, row['name']) for index, row in STREAMS.iterrows()]
@@ -67,10 +71,24 @@ def area():
   area_id = int(request.form['area_id'])
   spot_ids = np.where(STREAMS['area'] == AREAS[area_id][1])[0]
   area = []
+  coords_list = []
   for spot_id in spot_ids:
     spot = probe_spot(spot_id)
     area.append(spot)
-  return render_template('index.html', form=form, area=area)
+    coord = STREAMS.loc[[spot_id], ['name', 'lat', 'lon']].to_dict(orient = 'records')[0]
+    coord['crowd'] = spot['crowd']
+    coords_list.append(coord)
+
+  map_data = {
+    'center_lat': np.mean(STREAMS.iloc[spot_ids].lat),
+    'center_lon': np.mean(STREAMS.iloc[spot_ids].lon),
+    'min_lat': np.min(STREAMS.iloc[spot_ids].lat),
+    'max_lat': np.max(STREAMS.iloc[spot_ids].lat),
+    'min_lon': np.min(STREAMS.iloc[spot_ids].lon),
+    'max_lon': np.max(STREAMS.iloc[spot_ids].lon),
+    'coords_list': coords_list
+  }
+  return render_template('index.html', form=form, area=area, key=gmaps_api_key, map=map_data)
 
 @app.route("/demo", methods=['GET'])
 def demo():
@@ -83,6 +101,8 @@ def probe_spot(spot_id, draw_video = False):
   spot['location'] = STREAMS.location[spot_id]
   spot['report_url'] = STREAMS.report_url[spot_id]
   spot['height'], spot['tide'] = pull_weather(spot['report_url'])
+  spot['crowd'] = "N/A"
+  spot['video'] = "N/A"
   
   stream_url = STREAMS.stream_url[spot_id]
   try:
@@ -95,8 +115,7 @@ def probe_spot(spot_id, draw_video = False):
       spot['video'] = yolo_full_fps(stream_url)
   except Exception as e:
     if str(e) == 'ffmpeg error (see stderr output for detail)':
-      spot['crowd'] = "N/A"
-      spot['video'] = "N/A"
+      pass
 
   return spot
 
@@ -105,6 +124,8 @@ def pull_weather(report_url):
   json_data = ''
   swells = []
   for i, line in enumerate(r.text.split('\n')):
+    wave_height = 'N/A'
+    tide_current = 'N/A'
     if line[:21] == '      window.__DATA__':
       json_string = line[24:]
       json_data = json.loads(json_string)
@@ -114,7 +135,6 @@ def pull_weather(report_url):
       tides_dict = json_data['spot']['report']['data']['forecast']['tide']
       tide_current = tides_dict['current']['height']
       tide1, tide2 = tides_dict['previous']['height'], tides_dict['next']['height']
-      print(tides_dict)
       if tide_current > (tide1 + tide2) / 2:
         tide_current = '{:.1f} ft ⬆'.format(tide_current)
       elif tide_current == (tide1 + tide2) / 2:
@@ -122,6 +142,7 @@ def pull_weather(report_url):
       else:
         tide_current = '{:.1f} ft ⬇'.format(tide_current)
       break
+
   return wave_height, tide_current
 
 def stream_to_frame_tensor(stream_url, full_fps = False):
@@ -177,6 +198,7 @@ def estimate_crowds(stream_url):
 
 
 def yolo_full_fps(stream_url):
+  if DEBUG: return ''
   probe = ffmpeg.probe(stream_url)
   video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
   width = int(video_stream['width'])
