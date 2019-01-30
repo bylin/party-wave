@@ -21,7 +21,7 @@ if not DEBUG:
 
 # Yolo parameters
 net_h, net_w = 608, 608
-obj_thresh, nms_thresh = 0.3, 0.45
+obj_thresh, nms_thresh = 0.3, 0.2
 # anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
 labels = ["surfer"]
@@ -72,6 +72,10 @@ def area():
     area.append(spot)
   return render_template('index.html', form=form, area=area)
 
+@app.route("/demo", methods=['GET'])
+def demo():
+  form = SpotForm()
+  return render_template('demo.html', form=form)
 
 def probe_spot(spot_id, draw_video = False):
   spot = {}
@@ -107,32 +111,18 @@ def pull_weather(report_url):
       json_data['spot']['report']['data']
       wave_height_dict = json_data['spot']['report']['data']['forecast']['waveHeight']
       wave_height = '{} - {} ft'.format(wave_height_dict['min'], wave_height_dict['max'])
-      tide = json_data['spot']['report']['data']['forecast']['tide']['current']['type'].title()
+      tides_dict = json_data['spot']['report']['data']['forecast']['tide']
+      tide_current = tides_dict['current']['height']
+      tide1, tide2 = tides_dict['previous']['height'], tides_dict['next']['height']
+      print(tides_dict)
+      if tide_current > (tide1 + tide2) / 2:
+        tide_current = '{:.1f} ft ⬆'.format(tide_current)
+      elif tide_current == (tide1 + tide2) / 2:
+        pass
+      else:
+        tide_current = '{:.1f} ft ⬇'.format(tide_current)
       break
-  return wave_height, tide
-
-def estimate_crowds(stream_url):
-  frames = stream_to_frame_tensor(stream_url)
-  # count boxes for each captured frame
-  object_counts = []
-
-  for i, frame in enumerate(frames):
-    print('processing frame {}'.format(i))
-    new_image = keras_yolo.preprocess_input(frame, net_h, net_w)
-    yolos = surfer_cnn.predict(new_image)
-    boxes = keras_yolo.decode_netout(yolos[2][0], anchors[2], obj_thresh, nms_thresh, net_h, net_w)
-    image_h, image_w, _ = frame.shape
-    keras_yolo.correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
-    keras_yolo.do_nms(boxes, nms_thresh)    
-
-    object_counts.append(sum([box.classes[0] > obj_thresh for box in boxes]))
-
-  nsurfers = np.max(object_counts)
-  if nsurfers > 20:
-    return 'Gnarly'
-  elif nsurfers > 10:
-    return '🎊 Party 🎉'
-  return 'Sparse'
+  return wave_height, tide_current
 
 def stream_to_frame_tensor(stream_url, full_fps = False):
   probe = ffmpeg.probe(stream_url)

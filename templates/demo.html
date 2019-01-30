@@ -59,57 +59,35 @@
 
 	<br>
 
-	{% if area %}
-	<div class='row d-flex justify-content-center'>	
-		<div class="col mt-10">
-			<table class="table">
-				<thead>
-					<td>Name</td>
-					<td>Location</td>
-					<td>Height</td>
-					<td>Tide</td>
-					<td>Crowd</td>
-				</thead>
-				<tbody>
-					{% for spot in area %}
-					<tr>
-						<td id='spot-name'>{{ spot.name }}</td>
-						<td id='spot-location'>{{ spot.location }}</td>
-						<td id='spot-height'>{{ spot.height }}</td>
-						<td id='spot-tide'>{{ spot.tide }}</td>
-						<td id='spot-crowd'>{{ spot.crowd }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
+	<div class='row'>
+		<div class='col'>
+			<h3>Snapshot at 3:13:29 PM, 1/29/19</h3>
 		</div>
 	</div>
-	{% endif %}
-
-	{% if spot %}
+	
 	<div class='row d-flex justify-content-center'>	
 		<div class="col mt-10">
 			<table class="table">
 				<tbody>
 			    <tr>
 			      <th id='spot-name'>Spot</th>
-				    <td>{{ spot.name }}</td>
+				    <td>Pleasure Point</td>
 				  </tr>
 			    <tr>
 			      <th id='spot-location'>Location</th>
-				    <td>{{ spot.location }}</td>
+				    <td>Opal Cliffs, Santa Cruz County, California, United States</td>
 				  </tr>
 			    <tr>
 			      <th id='spot-height'>Height</th>
-				    <td>{{ spot.height }}</td>
+				    <td>2 - 3 ft</td>
 				  </tr>
 			    <tr>
 			      <th id='spot-tide'>Tide</th>
-				    <td>{{ spot.tide }}</td>
+				    <td>Normal</td>
 				  </tr>
 			    <tr>
 			      <th id='spot-crowd'>Crowd</th>
-				    <td>{{ spot.crowd }}</td>
+				    <td>Sparse</td>
 				  </tr>
 				</tbody>
 			</table>
@@ -118,12 +96,10 @@
 
 	<hr>
 
-	{% if spot.video != 'N/A' %}
+	
 	<video width="720" height="480" video controls loop autoplay>
-  	<source src="{{ spot.video }}" type="video/mp4">
+  	<source src="static/demo.mp4" type="video/mp4">
 	</video>
-	{% endif %}
-	{% endif %}
 </div>
 
 
