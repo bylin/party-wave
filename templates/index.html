@@ -20,6 +20,7 @@
 	function initMap() {
     var map = new google.maps.Map(document.getElementById("map_canvas"), {
       center: {lat: {{ map.center_lat }}, lng: {{ map.center_lon }}},
+      zoom: 12,
       mapTypeId: 'roadmap'
     });
     map.setTilt(45);

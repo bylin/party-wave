@@ -25,7 +25,7 @@ if not DEBUG:
 
 # Yolo parameters
 net_h, net_w = 608, 608
-obj_thresh, nms_thresh = 0.3, 0.2
+obj_thresh, nms_thresh = 0.3, 0.5
 # anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
 labels = ["surfer"]
