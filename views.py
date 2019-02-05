@@ -2,6 +2,7 @@
 from flask import Flask
 from flask import render_template
 from flask import request
+from partywave import app
 from wtforms import Form, SelectField
 import pandas as pd
 import numpy as np
@@ -12,34 +13,23 @@ from datetime import datetime
 import cv2
 from tempfile import NamedTemporaryFile
 import os
+from partywave import keras_yolo
 gmaps_api_key = os.environ.get('GMAPS_API_KEY')
 if not gmaps_api_key:
     raise RuntimeError("Google Maps API key not set")
-app = Flask(__name__)
-STREAMS = pd.read_csv('streams.tsv', sep = '\t')
+STREAMS = pd.read_csv('partywave/streams.tsv', sep = '\t')
 SPOTS = [(index, row['name']) for index, row in STREAMS.iterrows()]
 AREAS = [(index, area) for index, area in enumerate(STREAMS.loc[:, 'area'].unique())]
-DEBUG = False
-if not DEBUG:
-  import keras_yolo
 
 # Yolo parameters
 net_h, net_w = 608, 608
 obj_thresh, nms_thresh = 0.3, 0.5
-# anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
 labels = ["surfer"]
-
-# Build model and load weights
-if not DEBUG:
-  # yolov3 = keras_yolo.make_yolov3_model()
-  # weight_reader = keras_yolo.WeightReader('surfer_4500.weights')
-  # weight_reader.load_weights(yolov3)
-  # yolov3._make_predict_function()
-  surfer_cnn = keras_yolo.make_surfer_model()
-  weight_reader = keras_yolo.WeightReaderTiny('surfer-tiny_8000.weights')
-  weight_reader.load_weights(surfer_cnn)
-  surfer_cnn._make_predict_function()
+surfer_cnn = keras_yolo.make_surfer_model()
+weight_reader = keras_yolo.WeightReaderTiny('partywave/surfer-tiny2_8000.weights')
+weight_reader.load_weights(surfer_cnn)
+surfer_cnn._make_predict_function()
 
 class SpotForm(Form):
   spot_id = SelectField('Spot', choices = SPOTS)
@@ -53,7 +43,7 @@ def index():
 
 @app.route("/spot", methods=['GET', 'POST'])
 def spot():
-  if request.method == 'GET':
+  if request.method == 'GET' or request.form['spot_id'] == '':
     return index()
   form = SpotForm()
   spot_id = int(request.form['spot_id'])
@@ -65,7 +55,7 @@ def spot():
 
 @app.route("/area", methods=['GET', 'POST'])
 def area():
-  if request.method == 'GET':
+  if request.method == 'GET' or request.form['area_id'] == '':
     return index()
   form = SpotForm()
   area_id = int(request.form['area_id'])
@@ -90,10 +80,20 @@ def area():
   }
   return render_template('index.html', form=form, area=area, key=gmaps_api_key, map=map_data)
 
-@app.route("/demo", methods=['GET'])
-def demo():
+@app.route("/demo-sparse", methods=['GET'])
+def demo_sparse():
   form = SpotForm()
-  return render_template('demo.html', form=form)
+  return render_template('demo-sparse.html', form=form)
+
+@app.route("/demo-party", methods=['GET'])
+def demo_party():
+  form = SpotForm()
+  return render_template('demo-party.html', form=form)
+
+@app.route("/demo-area", methods=['GET'])
+def demo_area():
+  form = SpotForm()
+  return render_template('demo-area.html', form=form)
 
 def probe_spot(spot_id, draw_video = False):
   spot = {}
@@ -106,10 +106,7 @@ def probe_spot(spot_id, draw_video = False):
   
   stream_url = STREAMS.stream_url[spot_id]
   try:
-    if not DEBUG:
-      spot['crowd'] = estimate_crowds(stream_url)
-    else:
-      spot['crowd'] = 'Debug'
+    spot['crowd'] = estimate_crowds(stream_url)
 
     if draw_video:
       spot['video'] = yolo_full_fps(stream_url)
@@ -155,7 +152,7 @@ def stream_to_frame_tensor(stream_url, full_fps = False):
     out, err = (
       ffmpeg
       .input(stream_url, t=5)
-      .filter('fps', fps=1, round='up')
+      .filter('fps', fps=3, round='up')
       .output('pipe:', format='rawvideo', pix_fmt='rgb24')
       .run(capture_stdout=True)
     )
@@ -190,15 +187,14 @@ def estimate_crowds(stream_url):
     object_counts.append(sum([box.classes[0] > obj_thresh for box in boxes]))
 
   nsurfers = np.max(object_counts)
-  if nsurfers > 20:
+  if nsurfers > 12:
     return 'Gnarly'
-  elif nsurfers > 10:
+  elif nsurfers > 6:
     return '🎊 Party 🎉'
   return 'Sparse'
 
 
 def yolo_full_fps(stream_url):
-  if DEBUG: return ''
   probe = ffmpeg.probe(stream_url)
   video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
   width = int(video_stream['width'])
@@ -210,11 +206,12 @@ def yolo_full_fps(stream_url):
       .run_async(pipe_stdout=True)
   )
 
-  outfile = 'static/{:%H%M%S-%m%d%y}.mp4'.format(datetime.now())
+  outfile = '{:%H%M%S-%m%d%y}.mp4'.format(datetime.now())
+  outfile_path = 'partywave/static/video/{}'.format(outfile)
   process2 = (
       ffmpeg
       .input('pipe:', format='rawvideo', pix_fmt='rgb24', s='{}x{}'.format(width, height))
-      .output(outfile, pix_fmt='yuv420p')
+      .output(outfile_path, pix_fmt='yuv420p')
       .overwrite_output()
       .run_async(pipe_stdin=True)
   )

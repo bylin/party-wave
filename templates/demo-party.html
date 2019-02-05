@@ -1,0 +1,106 @@
+{% from "_formhelpers.html" import render_field %}
+<!doctype html>
+<head>
+	<title>party wave | get your sesh on without the crowd</title>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<link href="/static/bootstrap.min.css" rel="stylesheet">
+	<script src="/static/bootstrap.min.js"></script>
+	<script src="/static/select2.min.js"></script>
+	<link href="/static/select2.min.css" rel="stylesheet">
+	<link href="/static/partywave.css" rel="stylesheet">
+	<script>
+	$(document).ready(function() {
+    $('.spot-select').select2();
+    $('.area-select').select2();
+	});
+	</script>
+</head>
+
+<div class='container-fluid'>
+	<div class='row d-flex justify-content-center'>
+		<div class='col pt-5 pb-5 mb-4 banner'>
+			<h1>🎉 Party Wave 🌊</h1>
+		</div>
+	</div>
+
+	<div class='row d-flex justify-content-center'>
+
+		<div class="col mt-10">
+			<div class="col-12">
+				<form action="{{ url_for('spot') }}" method="post">
+					Enter a spot:
+					<select class="select-size-xs spot-select" name="spot_id">
+						<option></option>
+	          {% for choice in form.spot_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" value="Submit">
+				</form>
+		  </div>
+
+		  <br>
+
+		  <div class="col-12">
+				<form action="{{ url_for('area') }}" method="post">
+					Or, select an area:
+					<select class="select-size-xs area-select" name="area_id">
+						<option></option>
+	          {% for choice in form.area_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" action="{{ url_for('area') }}" value="Submit">
+				</form>
+		  </div>
+		</div>
+
+	</div>
+
+	<br>
+
+	<div class='row'>
+		<div class='col'>
+			<h3>Snapshot at 3:05:31 PM, 1/29/19</h3>
+		</div>
+	</div>
+	
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+			<table class="table">
+				<tbody>
+			    <tr>
+			      <th id='spot-name'>Spot</th>
+				    <td>Jack's</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-location'>Location</th>
+				    <td>Santa Cruz, Santa Cruz County, California, United States</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-height'>Height</th>
+				    <td>2 - 3 ft</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-tide'>Tide</th>
+				    <td>0.1 ft ⬇</td>
+				  </tr>
+			    <tr>
+			      <th id='spot-crowd'>Crowd</th>
+				    <td>🎊 Party 🎉</td>
+				  </tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<hr>
+
+	
+	<video width="720" height="480" video controls loop autoplay>
+  	<source src="{{ url_for('static', filename='video/') }}demo-party.mp4" type="video/mp4">
+	</video>
+</div>
+
+
+</div>

@@ -1,0 +1,402 @@
+{% from "_formhelpers.html" import render_field %}
+<!doctype html>
+<head>
+	<title>party wave | get your sesh on without the crowd</title>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<link href="/static/bootstrap.min.css" rel="stylesheet">
+	<script src="/static/bootstrap.min.js"></script>
+	<script src="/static/select2.min.js"></script>
+	<link href="/static/select2.min.css" rel="stylesheet">
+	<link href="/static/partywave.css" rel="stylesheet">
+	<script>
+	$(document).ready(function() {
+    $('.spot-select').select2();
+    $('.area-select').select2();
+	});
+	</script>
+	<script>
+	var icons, markers;
+	function initMap() {
+    var map = new google.maps.Map(document.getElementById("map_canvas"), {
+      center: {lat: 21.563876982226343, lng: -158.00912636217637},
+      zoom: 12,
+      mapTypeId: 'roadmap'
+    });
+    map.setTilt(45);
+    var sw_corner = new google.maps.LatLng(21.252,-158.109);
+    var ne_corner = new google.maps.LatLng(21.708000000000002,-157.805);
+    var bounds = new google.maps.LatLngBounds(sw_corner, ne_corner);
+    map.fitBounds(bounds);
+    markers = JSON.parse('[{"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.281416779283845, "lon": -157.84570455551147, "name": "Ala Moana Bowls"}, {"crowd": "Gnarly", "lat": 21.665, "lon": -158.054, "name": "Backdoor"}, {"crowd": "Gnarly", "lat": 21.6656, "lon": -158.05100000000002, "name": "Backdoor Overview"}, {"crowd": "Sparse", "lat": 21.625, "lon": -158.083, "name": "Chun\u0027s"}, {"crowd": "Sparse", "lat": 21.252, "lon": -157.805, "name": "Diamond Head"}, {"crowd": "Sparse", "lat": 21.668000000000003, "lon": -158.05, "name": "Gas Chambers"}, {"crowd": "Gnarly", "lat": 21.596999999999998, "lon": -158.109, "name": "Haleiwa"}, {"crowd": "Sparse", "lat": 21.623, "lon": -158.085, "name": "Jocko\u0027s"}, {"crowd": "Sparse", "lat": 21.62, "lon": -158.088, "name": "Laniakea"}, {"crowd": "Sparse", "lat": 21.619372107107953, "lon": -158.08571934700012, "name": "Laniakea Inside"}, {"crowd": "Sparse", "lat": 21.65870453806827, "lon": -158.06058168411258, "name": "Log Cabins"}, {"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.66203493640557, "lon": -158.05494904518127, "name": "Off-The-Wall"}, {"crowd": "Sparse", "lat": 21.66464735075164, "lon": -158.05199861526492, "name": "Pipeline"}, {"crowd": "Gnarly", "lat": 21.666103103102227, "lon": -158.05477738380432, "name": "Pipeline Overview"}, {"crowd": "Sparse", "lat": 21.604, "lon": -158.109, "name": "Pua\u0027ena Point"}, {"crowd": "Sparse", "lat": 21.662, "lon": -158.05700000000002, "name": "Rockpile"}, {"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.670550036401, "lon": -158.0482006072, "name": "Rocky Point"}, {"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.279, "lon": -157.843, "name": "South Shore - Ala Moana Park"}, {"crowd": "Sparse", "lat": 21.679000000000002, "lon": -158.042, "name": "Sunset Beach"}, {"crowd": "Sparse", "lat": 21.708000000000002, "lon": -158.002, "name": "Turtle Bay East"}, {"crowd": "Sparse", "lat": 21.685, "lon": -158.033, "name": "Velzyland"}, {"crowd": "Sparse", "lat": 21.267080507181625, "lon": -157.8236036008241, "name": "Waikiki - Kapiolani Park"}, {"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.274598513189574, "lon": -157.82677888870242, "name": "Waikiki Beach"}, {"crowd": "\ud83c\udf8a Party \ud83c\udf89", "lat": 21.280497173249792, "lon": -157.84186243605586, "name": "Waikiki to Ala Wai"}, {"crowd": "Sparse", "lat": 21.643, "lon": -158.067, "name": "Waimea Bay"}, {"crowd": "Sparse", "lat": 21.640196493143453, "lon": -158.0651092529297, "name": "Waimea Bay Overview"}]');
+     
+        
+    // Display multiple markers on a map
+    var infoWindow = new google.maps.InfoWindow(), marker, i;
+    
+    icons = {
+    	'Sparse': "/static/blue.png",
+    	'🎊 Party 🎉': "/static/yellow.png", 
+    	'Gnarly': "/static/red.png", 
+    	'N/A': "/static/grey.png"}
+    // Loop through our array of markers & place each one on the map  
+    for( i = 0; i < markers.length; i++ ) {
+        var position = new google.maps.LatLng(markers[i]['lat'], markers[i]['lon']);
+        var marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            icon: icons[markers[i]['crowd']] 
+        });
+        
+        // Allow each marker to have an info window    
+        google.maps.event.addListener(marker, 'click', (function(marker, i) {
+            return function() {
+                // infoWindow.setContent(markers[i]['crowd']);
+                infoWindow.setContent('<b>' + markers[i]['name'] + '</b><br>' + markers[i]['crowd']);
+                infoWindow.open(map, marker);
+            }
+        })(marker, i));
+    }
+	}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAUCCAt3bOpq_EnZr7tX8NTcY1QepV__j8&callback=initMap"></script>
+
+</head>
+
+<div class='container-fluid'>
+	<div class='row d-flex justify-content-center'>
+		<div class='col pt-5 pb-5 mb-4 banner'>
+			<h1>🎉 Party Wave 🌊</h1>
+		</div>
+	</div>
+
+	<div class='row d-flex justify-content-center'>
+
+		<div class="col mt-10">
+			<div class="col-12">
+				<form action="{{ url_for('spot') }}" method="post">
+					Enter a spot:
+					<select class="select-size-xs spot-select" name="spot_id">
+						<option></option>
+	          {% for choice in form.spot_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" value="Submit">
+				</form>
+		  </div>
+
+		  <br>
+
+		  <div class="col-12">
+				<form action="{{ url_for('area') }}" method="post">
+					Or, select an area:
+					<select class="select-size-xs area-select" name="area_id">
+						<option></option>
+	          {% for choice in form.area_id.choices %}
+	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+	          {% endfor %}
+			    </select>
+					<input type="submit" action="{{ url_for('area') }}" value="Submit">
+				</form>
+		  </div>
+		</div>
+
+	</div>
+
+	<br>
+
+	<div class='row'>
+		<div class='col'>
+			<h3>Snapshot at 6:28:34 PM, 2/03/19</h3>
+		</div>
+	</div>
+		
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+		  <div id="map_wrapper">
+		    <div id="map_canvas" class="mapping"></div>
+			</div>
+		</div>
+	</div>
+
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+			<table class="table">
+				<thead>
+					<td>Name</td>
+					<td>Location</td>
+					<td>Height</td>
+					<td>Tide</td>
+					<td>Crowd</td>
+				</thead>
+				<tbody>
+					
+					<tr>
+						<td id='spot-name'>Ala Moana Bowls</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>1 - 2 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Backdoor</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 8 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Backdoor Overview</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 8 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd' style='color:red'>Gnarly</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Chun&#39;s</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Diamond Head</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>2 - 3 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Gas Chambers</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Haleiwa</td>
+						<td id='spot-location'>Hale‘iwa, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 6 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Jocko&#39;s</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Laniakea</td>
+						<td id='spot-location'>Hale‘iwa, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Laniakea Inside</td>
+						<td id='spot-location'>Hale‘iwa, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Log Cabins</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Off-The-Wall</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>6 - 8 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Pipeline</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd' style='color:red'>Gnarly</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Pipeline Overview</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd' style='color:red'>Gnarly</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Pua&#39;ena Point</td>
+						<td id='spot-location'>Hale‘iwa, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>4 - 6 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Rockpile</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>6 - 8 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Rocky Point</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 8 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>South Shore - Ala Moana Park</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>1 - 2 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Sunset Beach</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 8 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd' style='color:red'>Gnarly</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Turtle Bay East</td>
+						<td id='spot-location'>Kahuku, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 6 ft</td>
+						<td id='spot-tide'>0.3 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Velzyland</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Waikiki - Kapiolani Park</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>1 - 2 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Waikiki Beach</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>1 - 2 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Waikiki to Ala Wai</td>
+						<td id='spot-location'>Honolulu, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>1 - 2 ft</td>
+						<td id='spot-tide'>0.6 ft ⬆</td>
+						
+						<td id='spot-crowd'>🎊 Party 🎉</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Waimea Bay</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+					<tr>
+						<td id='spot-name'>Waimea Bay Overview</td>
+						<td id='spot-location'>Pupukea, O‘ahu, Hawaii, United States</td>
+						<td id='spot-height'>5 - 7 ft</td>
+						<td id='spot-tide'>0.1 ft ⬇</td>
+						
+						<td id='spot-crowd'>Sparse</td>
+						
+					</tr>
+					
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+</div>
+
+
+</div>

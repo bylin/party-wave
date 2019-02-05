@@ -3,11 +3,11 @@
 <head>
 	<title>party wave | get your sesh on without the crowd</title>
 	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-	<link href="/static/bootstrap.min.css" rel="stylesheet">
-	<script src="/static/bootstrap.min.js"></script>
-	<script src="/static/select2.min.js"></script>
-	<link href="/static/select2.min.css" rel="stylesheet">
-	<link href="/static/partywave.css" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+	<script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='select2.min.js') }}"></script>
+	<link href="{{ url_for('static', filename='select2.min.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='partywave.css') }}" rel="stylesheet">
 	<script>
 	$(document).ready(function() {
     $('.spot-select').select2();
@@ -34,10 +34,10 @@
     var infoWindow = new google.maps.InfoWindow(), marker, i;
     
     icons = {
-    	'Sparse': 'static/blue.png',
-    	'🎊 Party 🎉': 'static/yellow.png', 
-    	'Gnarly': 'static/red.png', 
-    	'N/A': 'static/grey.png'}
+    	'Sparse': "{{ url_for('static', filename='blue.png') }}",
+    	'🎊 Party 🎉': "{{ url_for('static', filename='yellow.png') }}", 
+    	'Gnarly': "{{ url_for('static', filename='red.png') }}", 
+    	'N/A': "{{ url_for('static', filename='grey.png') }}"}
     // Loop through our array of markers & place each one on the map  
     for( i = 0; i < markers.length; i++ ) {
         var position = new google.maps.LatLng(markers[i]['lat'], markers[i]['lon']);
@@ -64,7 +64,7 @@
 
 <div class='container-fluid'>
 	<div class='row d-flex justify-content-center'>
-		<div class='col mt-5 mb-5'>
+		<div class='col pt-5 pb-5 mb-4 banner'>
 			<h1>🎉 Party Wave 🌊</h1>
 		</div>
 	</div>
@@ -99,6 +99,10 @@
 					<input type="submit" action="{{ url_for('area') }}" value="Submit">
 				</form>
 		  </div>
+		  <br>
+		  <div class="col-12">
+		    Load an example of: <a href="demo-sparse">a sparse spot</a>  •  <a href="demo-party">a party wave</a>  •  <a href="demo-area">an entire area</a>
+		  </div>
 		</div>
 
 	</div>
@@ -106,6 +110,13 @@
 	<br>
 
 	{% if area %}
+	<div class='row d-flex justify-content-center'>	
+		<div class="col mt-10">
+		  <div id="map_wrapper">
+		    <div id="map_canvas" class="mapping"></div>
+			</div>
+		</div>
+	</div>
 	<div class='row d-flex justify-content-center'>	
 		<div class="col mt-10">
 			<table class="table">
@@ -123,21 +134,17 @@
 						<td id='spot-location'>{{ spot.location }}</td>
 						<td id='spot-height'>{{ spot.height }}</td>
 						<td id='spot-tide'>{{ spot.tide }}</td>
+						{% if spot.crowd == 'Gnarly' %}
+						<td id='spot-crowd' style='color:darkred'>{{ spot.crowd }}</td>
+						{% else %}
 						<td id='spot-crowd'>{{ spot.crowd }}</td>
+						{% endif %}
 					</tr>
 					{% endfor %}
 				</tbody>
-			</table>
 		</div>
 	</div>
 
-	<div class='row d-flex justify-content-center'>	
-		<div class="col mt-10">
-		  <div id="map_wrapper">
-		    <div id="map_canvas" class="mapping"></div>
-			</div>
-		</div>
-	</div>
 	{% endif %}
 
 	{% if spot %}
@@ -174,7 +181,7 @@
 
 	{% if spot.video != 'N/A' %}
 	<video width="720" height="480" video controls loop autoplay>
-  	<source src="{{ spot.video }}" type="video/mp4">
+  	<source src="{{ url_for('static', filename='video/') }}{{ spot.video }}" type="video/mp4">
 	</video>
 	{% endif %}
 	{% endif %}
