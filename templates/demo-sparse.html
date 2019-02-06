@@ -97,8 +97,9 @@
 	<hr>
 
 	
-	<video width="720" height="480" video controls loop autoplay>
-  	<source src="{{ url_for('static', filename='video/') }}demo-sparse.mp4" type="video/mp4">
+	<video width="720" height="480" video controls loop autoplay muted>
+  	<source src="{{ url_for('static', filename='demo/') }}demo-sparse.mp4" type="video/mp4">
+  	<source src="{{ url_for('static', filename='demo/') }}demo-sparse.webm" type="video/webm">
 	</video>
 </div>
 

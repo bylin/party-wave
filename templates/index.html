@@ -182,6 +182,7 @@
 	{% if spot.video != 'N/A' %}
 	<video width="720" height="480" video controls loop autoplay>
   	<source src="{{ url_for('static', filename='video/') }}{{ spot.video }}" type="video/mp4">
+  	<source src="{{ url_for('static', filename='video/') }}{{ spot.video }}.webm" type="video/webm">
 	</video>
 	{% endif %}
 	{% endif %}

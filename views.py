@@ -13,6 +13,7 @@ from datetime import datetime
 import cv2
 from tempfile import NamedTemporaryFile
 import os
+import subprocess
 from partywave import keras_yolo
 gmaps_api_key = os.environ.get('GMAPS_API_KEY')
 if not gmaps_api_key:
@@ -142,27 +143,19 @@ def pull_weather(report_url):
 
   return wave_height, tide_current
 
-def stream_to_frame_tensor(stream_url, full_fps = False):
+def stream_to_frame_tensor(stream_url):
   probe = ffmpeg.probe(stream_url)
   video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
   width = int(video_stream['width'])
   height = int(video_stream['height'])
   
-  if not full_fps:
-    out, err = (
-      ffmpeg
-      .input(stream_url, t=5)
-      .filter('fps', fps=3, round='up')
-      .output('pipe:', format='rawvideo', pix_fmt='rgb24')
-      .run(capture_stdout=True)
-    )
-  else:
-    out, err = (
-      ffmpeg
-      .input(stream_url, t=3)
-      .output('pipe:', format='rawvideo', pix_fmt='rgb24')
-      .run(capture_stdout=True)
-    )
+  out, err = (
+    ffmpeg
+    .input(stream_url, t=5)
+    .filter('fps', fps=3, round='up')
+    .output('pipe:', format='rawvideo', pix_fmt='rgb24')
+    .run(capture_stdout=True)
+  )
   video = (
     np
     .frombuffer(out, np.uint8)
@@ -187,9 +180,9 @@ def estimate_crowds(stream_url):
     object_counts.append(sum([box.classes[0] > obj_thresh for box in boxes]))
 
   nsurfers = np.max(object_counts)
-  if nsurfers > 12:
+  if nsurfers >= 12:
     return 'Gnarly'
-  elif nsurfers > 6:
+  elif nsurfers >= 6:
     return '🎊 Party 🎉'
   return 'Sparse'
 
@@ -201,7 +194,7 @@ def yolo_full_fps(stream_url):
   height = int(video_stream['height'])
   process1 = (
       ffmpeg
-      .input(stream_url, t=3)
+      .input(stream_url, t=5)
       .output('pipe:', format='rawvideo', pix_fmt='rgb24')
       .run_async(pipe_stdout=True)
   )
@@ -244,4 +237,11 @@ def yolo_full_fps(stream_url):
   process1.wait()
   process2.wait()
 
+  # convert to webm for chrome
+  (
+    ffmpeg
+    .input(outfile_path)
+    .output(outfile_path + '.webm')
+    .run()
+  )
   return outfile
