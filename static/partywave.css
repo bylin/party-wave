@@ -1,3 +1,16 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+main {
+  flex: 1;
+}
+
+
 h1 {
 	text-align: center;
 }
@@ -18,4 +31,16 @@ h1 {
 .banner {
     background: #104C93;
     color: white;
+}
+
+.footer {
+  margin-top: 10em;
+  background-color: #333333;
+  color: #eeeeee;
+  vertical-align: middle
+}
+.footer-link {
+  color: #eeeeee;
+  font-weight: bold;
+
 }

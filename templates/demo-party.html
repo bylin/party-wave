@@ -1,5 +1,6 @@
 {% from "_formhelpers.html" import render_field %}
 <!doctype html>
+<html>
 <head>
 	<title>party wave | get your sesh on without the crowd</title>
 	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -15,7 +16,8 @@
 	});
 	</script>
 </head>
-
+<body>
+<main>
 <div class='container-fluid'>
 	<div class='row d-flex justify-content-center'>
 		<div class='col pt-5 pb-5 mb-4 banner'>
@@ -52,6 +54,10 @@
 			    </select>
 					<input type="submit" action="{{ url_for('area') }}" value="Submit">
 				</form>
+		  </div>
+		  <br>
+		  <div class="col-12">
+		    Load an example of: <a href="demo-sparse">a sparse spot</a>  •  <a href="demo-party">a party wave</a>  •  <a href="demo-area">an entire area</a>
 		  </div>
 		</div>
 
@@ -105,3 +111,13 @@
 
 
 </div>
+</main>
+<footer class="footer">
+      <div class="container text-center">
+      	<div class="p-4">
+	      	Made by <a href="https://www.linkedin.com/in/brianylin/" class="footer-link" target="_blank">Brian Lin</a> as an <a href="https://www.insightdatascience.com" class="footer-link" target="_blank">Insight Data Science</a> project. <a href="https://docs.google.com/presentation/d/1kDP8Nty-7x9YEE0tDsjG5jlWWydwUwn95JIATu809rk/edit#slide=id.g4b3098103f_0_46" class="footer-link" target="_blank">Slides here</a>.
+	      </div>
+      </div>
+    </footer>
+</body>
+</html>
