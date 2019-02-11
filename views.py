@@ -1,20 +1,22 @@
 # -*- coding: UTF-8 -*-
+### Flask config ###
 from flask import Flask
 from flask import render_template
 from flask import request
 from partywave import app
 from wtforms import Form, SelectField
+import requests
+
+### Party Wave onfig ###
 import pandas as pd
 import numpy as np
-import requests
 import json
 import ffmpeg
 from datetime import datetime
 import cv2
-from tempfile import NamedTemporaryFile
 import os
 import subprocess
-from partywave import keras_yolo
+
 gmaps_api_key = os.environ.get('GMAPS_API_KEY')
 if not gmaps_api_key:
     raise RuntimeError("Google Maps API key not set")
@@ -22,20 +24,29 @@ STREAMS = pd.read_csv('partywave/streams.tsv', sep = '\t')
 SPOTS = [(index, row['name']) for index, row in STREAMS.iterrows()]
 AREAS = [(index, area) for index, area in enumerate(STREAMS.loc[:, 'area'].unique())]
 
-# Yolo parameters
+### Tensorflow / keras  ###
+import tensorflow as tf
+from keras import backend as k
+from partywave import keras_yolo
+config = tf.ConfigProto()
+# Don't pre-allocate memory; allocate as-needed
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.15
+k.tensorflow_backend.set_session(tf.Session(config=config))
+
+### Yolo config ###
 net_h, net_w = 608, 608
 obj_thresh, nms_thresh = 0.3, 0.5
 anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
 labels = ["surfer"]
 surfer_cnn = keras_yolo.make_surfer_model()
-weight_reader = keras_yolo.WeightReaderTiny('partywave/surfer-tiny2_8000.weights')
+weight_reader = keras_yolo.WeightReaderTiny('partywave/full_6000.weights')
 weight_reader.load_weights(surfer_cnn)
 surfer_cnn._make_predict_function()
 
 class SpotForm(Form):
   spot_id = SelectField('Spot', choices = SPOTS)
   area_id = SelectField('Area', choices = AREAS)
-
 
 @app.route("/", methods=['GET'])
 def index():
@@ -107,6 +118,7 @@ def probe_spot(spot_id, draw_video = False):
   
   stream_url = STREAMS.stream_url[spot_id]
   try:
+    print('estimating crowds at {}'.format(stream_url))
     spot['crowd'] = estimate_crowds(stream_url)
 
     if draw_video:
