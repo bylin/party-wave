@@ -36,7 +36,7 @@ k.tensorflow_backend.set_session(tf.Session(config=config))
 
 ### Yolo config ###
 net_h, net_w = 608, 608
-obj_thresh, nms_thresh = 0.3, 0.5
+obj_thresh, nms_thresh = 0.2, 0.5
 anchors = [[81,82,  135,169,  344,319],  [10,14 , 23,27,  37,58]]
 labels = ["surfer"]
 surfer_cnn = keras_yolo.make_surfer_model()
