@@ -43,6 +43,7 @@ surfer_cnn = keras_yolo.make_surfer_model()
 weight_reader = keras_yolo.WeightReaderTiny('partywave/full_6000.weights')
 weight_reader.load_weights(surfer_cnn)
 surfer_cnn._make_predict_function()
+print('CNN ready')
 
 class SpotForm(Form):
   spot_id = SelectField('Spot', choices = SPOTS)
@@ -163,7 +164,7 @@ def stream_to_frame_tensor(stream_url):
   
   out, err = (
     ffmpeg
-    .input(stream_url, t=5)
+    .input(stream_url, t=3)
     .filter('fps', fps=3, round='up')
     .output('pipe:', format='rawvideo', pix_fmt='rgb24')
     .run(capture_stdout=True)
@@ -206,7 +207,7 @@ def yolo_full_fps(stream_url):
   height = int(video_stream['height'])
   process1 = (
       ffmpeg
-      .input(stream_url, t=5)
+      .input(stream_url, t=3.5)
       .output('pipe:', format='rawvideo', pix_fmt='rgb24')
       .run_async(pipe_stdout=True)
   )

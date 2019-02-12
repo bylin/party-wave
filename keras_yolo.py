@@ -90,10 +90,11 @@ class WeightReaderTiny:
         return self.all_weights[self.offset-size:self.offset]
 
     def load_weights(self, model):
+        print('loading weights...')
         for i in range(23):
             try:
                 conv_layer = model.get_layer('conv_' + str(i))
-                print("loading weights of convolution #" + str(i))
+                #print("loading weights of convolution #" + str(i))
 
                 if i not in [15, 22]:
                     norm_layer = model.get_layer('bnorm_' + str(i))
@@ -120,8 +121,10 @@ class WeightReaderTiny:
                     kernel = kernel.transpose([2,3,1,0])
                     conv_layer.set_weights([kernel])
             except ValueError:
-                print("no convolution #" + str(i))     
+                pass
+                #print("no convolution #" + str(i))     
     
+        print('done')
     def reset(self):
         self.offset = 0
 
