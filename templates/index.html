@@ -79,34 +79,33 @@
 					Enter a spot:
 					<select class="select-size-xs spot-select" name="spot_id">
 						<option></option>
-	          {% for choice in form.spot_id.choices %}
-	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
-	          {% endfor %}
-			    </select>
+						{% for choice in form.spot_id.choices %}
+						<option value="{{ choice[0] }}">{{ choice[1] }}</option>
+						{% endfor %}
+					</select>
 					<input type="submit" value="Submit">
 				</form>
-		  </div>
+		  	</div>
 
-		  <br>
+		  	<br>
 
-		  <div class="col-12">
+			<div class="col-12">
 				<form action="{{ url_for('area') }}" method="post">
 					Or, select an area:
 					<select class="select-size-xs area-select" name="area_id">
 						<option></option>
-	          {% for choice in form.area_id.choices %}
-	          <option value="{{ choice[0] }}">{{ choice[1] }}</option>
-	          {% endfor %}
-			    </select>
+						{% for choice in form.area_id.choices %}
+						<option value="{{ choice[0] }}">{{ choice[1] }}</option>
+						{% endfor %}
+					</select>
 					<input type="submit" action="{{ url_for('area') }}" value="Submit">
 				</form>
-		  </div>
-		  <br>
-		  <div class="col-12">
-		    Load an example of: <a href="demo-sparse">a sparse spot</a>  •  <a href="demo-party">a party wave</a>  •  <a href="demo-area">an entire area</a>
-		  </div>
+		  	</div>
+			<br>
+			<div class="col-12">
+				Load an example of: <a href="demo-sparse">a sparse spot</a>  •  <a href="demo-party">a party wave</a>  •  <a href="demo-area">an entire area</a>
+			</div>
 		</div>
-
 	</div>
 
 	<br>
@@ -144,6 +143,7 @@
 					</tr>
 					{% endfor %}
 				</tbody>
+			</table>
 		</div>
 	</div>
 
@@ -188,9 +188,6 @@
 	</video>
 	{% endif %}
 	{% endif %}
-</div>
-
-
 </div>
 </main>
 <footer class="footer">
